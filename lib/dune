@@ -3,5 +3,5 @@
 (menhir (modules parser))
 
 (library
- (modules Eval Expression Parser Lexer)
+ (modules Eval Expression Parser Lexer Typecheck)
  (name typed))

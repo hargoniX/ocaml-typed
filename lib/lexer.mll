@@ -24,9 +24,12 @@ rule lex =
   | ")" { RPAREN }
   | "+" { PLUS }
   | "=" { EQ }
+  | "int" { INTEGER }
   | "in" { IN }
-  | id { ID (lexeme lexbuf) }
   | "\\" { LAMBDA }
   | "=>" { ARROW }
+  | ":" { COL }
+  | "->" { FUNCTION }
+  | id { ID (lexeme lexbuf) }
   | eof { EOF }
   | _ { choke lexbuf "Invalid syntax" }

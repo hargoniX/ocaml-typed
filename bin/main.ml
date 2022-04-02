@@ -1,5 +1,6 @@
 open Typed;;
 open Eval;;
+open Typecheck;;
 
 let print_position outx (lexbuf : Lexing.lexbuf) =
   let pos = lexbuf.lex_curr_p in
@@ -28,12 +29,16 @@ let rep () =
     ()
   else
     let lexbuf = Lexing.from_string input in
-    let base_env = { next = None; variable = { name = "_"; value = Eval.Const 0 }} in
-    let evaled = eval (parse_with_error lexbuf) base_env in
-    (match evaled with
-     | Err e -> print_error e;
-     | Ok (Const v) -> print_int v;
-     | Ok (Fun _) -> print_string "Got function";);
+    let expr = (parse_with_error lexbuf) in
+    (match typecheck expr with
+     | Ok _ ->
+       let base_env = { next = None; variable = { name = "_"; value = Eval.Const 0 }} in
+       let evaled = eval expr base_env in
+       (match evaled with
+        | Error _ -> print_string "The typecherk said it was fine!!!"
+        | Ok (Const v) -> print_int v
+        | Ok (Fun _) -> print_string "Got function")
+     | Error e -> print_error e);
     print_newline ()
 
 let rec repl () =

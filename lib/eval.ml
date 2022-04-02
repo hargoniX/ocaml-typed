@@ -1,11 +1,11 @@
 open Expression;;
 
-type value = | Const of int | Fun of string * expression * environment
+type value = Const of int | Fun of string * expression * environment
  and variable = { name : string; value : value }
  and environment = { next : environment option;  variable : variable }
 
 type error = VarNotFound of string | TypeError of string
-type evaluation = Ok of value | Err of error
+type 'a evaluation = ('a, error) result
 
 let print_error e =
   match e with
@@ -18,7 +18,7 @@ let rec find_var name env =
   else
     match env.next with
     | Some next -> find_var name next
-    | None -> Err (VarNotFound name)
+    | None -> Error (VarNotFound name)
 
 let add_var name value env =
   { next = Some env; variable = { name = name; value = value } }
@@ -29,20 +29,18 @@ let rec eval expr env =
   | Let (name, value, body) ->
      (match (eval value env) with
       | Ok value -> eval body (add_var name value env)
-      | Err e -> Err e)
-  | Lam (name, body) -> Ok (Fun (name, body, env))
+      | Error e -> Error e)
+  | Lam (name, _, body) -> Ok (Fun (name, body, env))
   | App (func, arg) ->
      (match eval func env, eval arg env with
       | Ok (Fun (name, body, inner)), Ok arg -> eval body (add_var name arg inner)
-      | Ok (Const _), _ -> Err (TypeError "Type error in function application, lhs is not of type fun") 
-      | Err e, _ -> Err e
-      | _, Err e -> Err e)
+      | Ok (Const _), _ -> Error (TypeError "In function application, lhs is not of type fun") 
+      | Error e, _ | _, Error e -> Error e)
   | Add (l, r) ->
      (match eval l env, eval r env with
       | Ok (Const lval), Ok (Const rval) -> Ok (Const (lval + rval))
-      | Ok (Fun _), _ -> Err (TypeError "Type error in addition, lhs is not an integer")
-      | _, Ok (Fun _) -> Err (TypeError "Type error in addition, rhs is not an integer")
-      | Err e, _ -> Err e
-      | _, Err e -> Err e)
+      | Ok (Fun _), _ -> Error (TypeError "In addition, lhs is not an integer")
+      | _, Ok (Fun _) -> Error (TypeError "In addition, rhs is not an integer")
+      | Error e, _ | _, Error e -> Error e)
   | IntLit value -> Ok (Const value)
 
